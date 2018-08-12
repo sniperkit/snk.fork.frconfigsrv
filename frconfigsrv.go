@@ -1,3 +1,8 @@
+/*
+Sniperkit-Bot
+- Status: analyzed
+*/
+
 package main
 
 // Utility that listens for requests to a) export configuration (amster only)
@@ -8,9 +13,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/go-chi/chi"
-	"github.com/go-chi/chi/middleware"
-	"github.com/go-chi/cors"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -18,7 +20,11 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+
 	"forgerock.io/frconfigsrv/gitops"
+	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/middleware"
+	"github.com/go-chi/cors"
 )
 
 // Holds our defaults
@@ -30,7 +36,7 @@ type Config struct {
 }
 
 var (
-	config   Config
+	config Config
 )
 
 func paramValue(param string, defValue string) string {
@@ -65,7 +71,7 @@ func exportHandler(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Query().Get("path")
 
 	if path == "" {
-		path = config.ExportPath;
+		path = config.ExportPath
 	}
 
 	// do the export - we just handle amster right now
@@ -106,7 +112,6 @@ func execRequest(cmd *exec.Cmd, w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(cmd.Stdout, s)
 	}
 }
-
 
 // A very simple index in case there is no GUI installed
 func index(w http.ResponseWriter, r *http.Request) {
@@ -181,7 +186,7 @@ func main() {
 	// Read our configuration from ENV variables.
 	config.ExportPath = paramValue(os.Getenv("EXPORT_PATH"), "default/am/autosave-am")
 	gitRoot := paramValue(os.Getenv("GIT_ROOT"), "/git")
-	projectDirectory :=  paramValue(os.Getenv("GIT_PROJECT_DIRECTORY"), "forgeops-init")
+	projectDirectory := paramValue(os.Getenv("GIT_PROJECT_DIRECTORY"), "forgeops-init")
 	config.GitPath = fmt.Sprintf("%s/%s", gitRoot, projectDirectory)
 	config.GitBranch = paramValue(os.Getenv("GIT_AUTOSAVE_BRANCH"), "autosave")
 
@@ -214,7 +219,7 @@ func main() {
 
 	// change to git path
 	if err := os.Chdir(config.GitPath); err != nil {
-		panic( fmt.Sprintf("Can't change working directory to %s. err=%s\n", config.GitPath, err  ) )
+		panic(fmt.Sprintf("Can't change working directory to %s. err=%s\n", config.GitPath, err))
 	}
 
 	err := http.ListenAndServe(address, r)

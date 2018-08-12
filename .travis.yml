@@ -1,3 +1,6 @@
+# Sniperkit-Bot
+# - Status: analyzed
+
 language: go
 go_import_path: forgerock.io/frconfigsrv
 install: make get-deps
@@ -8,4 +11,4 @@ deploy:
   file: build/frconfigsrv
   skip_cleanup: true
   on:
-    repo: wstrange/frconfigsrv
+    repo: sniperkit/snk.fork.frconfigsrv

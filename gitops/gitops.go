@@ -1,38 +1,42 @@
+/*
+Sniperkit-Bot
+- Status: analyzed
+*/
+
 package gitops
 
 import (
-	"gopkg.in/src-d/go-git.v4/plumbing"
+	"encoding/json"
 	"fmt"
-	"gopkg.in/src-d/go-git.v4/plumbing/object"
+	"io/ioutil"
+	"net/http"
+	"os"
+	"strings"
+	"time"
+
 	"golang.org/x/crypto/ssh"
 	"gopkg.in/src-d/go-git.v4"
+	"gopkg.in/src-d/go-git.v4/plumbing"
+	"gopkg.in/src-d/go-git.v4/plumbing/object"
 	gitssh "gopkg.in/src-d/go-git.v4/plumbing/transport/ssh"
-	"time"
-	"net/http"
-	"encoding/json"
-	"strings"
-	"os"
-	"io/ioutil"
 )
-
 
 var (
-	gitRepo  *git.Repository
-	worktree *git.Worktree
-	gitAuth  *gitssh.PublicKeys
-	CurrentBranch string   // bit of a hack. We should make this a class???
+	gitRepo       *git.Repository
+	worktree      *git.Worktree
+	gitAuth       *gitssh.PublicKeys
+	CurrentBranch string // bit of a hack. We should make this a class???
 )
 
-
 type GitStatusResponse struct {
-	Branches   []string `json:"branches"`
-	HeadHash   string   `json:"head"`
-	HeadBranch string   `json:"headBranch"`
-	IsDirty    bool     `json:"isDirty"`
-	ChangeCount int `json:"changeCount"`
-	FileList	[]string `json:"fileList,omitempty"`
-	RemoteList	[]string `json:"remoteList,omitempty"`
-	NeedPush	bool    `json:"needPush"`
+	Branches    []string `json:"branches"`
+	HeadHash    string   `json:"head"`
+	HeadBranch  string   `json:"headBranch"`
+	IsDirty     bool     `json:"isDirty"`
+	ChangeCount int      `json:"changeCount"`
+	FileList    []string `json:"fileList,omitempty"`
+	RemoteList  []string `json:"remoteList,omitempty"`
+	NeedPush    bool     `json:"needPush"`
 }
 
 func GitInit(gitroot, branch string) {
@@ -161,14 +165,14 @@ func GitResetHandler(w http.ResponseWriter, r *http.Request) {
 			fmt.Printf("remove has %s err %v\n", hash, err)
 		}
 	}
-	fmt.Fprintf(w,"ok")
+	fmt.Fprintf(w, "ok")
 }
 
 // handle git push of config files. This assumes the upstream repo has been set already
 func GitPushHandler(w http.ResponseWriter, r *http.Request) {
 	err := gitRepo.Push(&git.PushOptions{Auth: gitAuth})
 	if err != nil {
-		fmt.Fprintf(w,"Push error %s", err)
+		fmt.Fprintf(w, "Push error %s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	} else {
 		fmt.Fprintln(w, "Pushed OK")
@@ -182,14 +186,14 @@ func GitStatusHandler(w http.ResponseWriter, r *http.Request) {
 	fetchFiles := false
 	files := r.URL.Query().Get("files")
 	if files == "true" {
-		fetchFiles = true;
+		fetchFiles = true
 	}
 
 	remotes, err := gitRepo.Remotes()
 
-	gitResponse.RemoteList = make([]string,0,40)
+	gitResponse.RemoteList = make([]string, 0, 40)
 
-	for _,remote := range remotes {
+	for _, remote := range remotes {
 		c := remote.Config()
 		s := fmt.Sprintf("%s %s", c.URL, c.Name)
 
@@ -216,7 +220,6 @@ func GitStatusHandler(w http.ResponseWriter, r *http.Request) {
 		return nil
 	})
 
-
 	b, err := gitRepo.Branches()
 
 	CheckIfError(err)
@@ -238,7 +241,7 @@ func GitStatusHandler(w http.ResponseWriter, r *http.Request) {
 	if !status.IsClean() {
 		gitResponse.ChangeCount = len(status)
 		if fetchFiles {
-			flist := make([]string,0, len(status))
+			flist := make([]string, 0, len(status))
 			for k, v := range status { //
 				flist = append(flist, fmt.Sprintf("%s %s", k, string(v.Worktree)))
 			}
@@ -255,7 +258,6 @@ func GitStatusHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(gitResponse)
 }
-
 
 func GitListBranches(w http.ResponseWriter, r *http.Request) {
 	b, err := gitRepo.Branches()
@@ -274,11 +276,9 @@ func GitListBranches(w http.ResponseWriter, r *http.Request) {
 
 }
 
-
 func CheckIfError(err error) {
 	if err != nil {
 		fmt.Printf("Error is %v message %s", err, err.Error())
 		panic(err)
 	}
 }
-
